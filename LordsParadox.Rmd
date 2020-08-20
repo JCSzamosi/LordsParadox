@@ -13,14 +13,14 @@ cols = c('dodgerblue2','goldenrod3')
 a_mean = 150
 b_mean = 160
 set.seed(4)
-a_0 = rnorm(500, a_mean, 4)
-b_0 = rnorm(500, b_mean, 4)
-delt = 0.3
+a_0 = rnorm(500, a_mean, 5)
+b_0 = rnorm(500, b_mean, 5)
+delt = 0.2
 set.seed(5)
-a_1 = delt*a_mean + (1-delt)*a_0 + rnorm(500, 0, 1.5)
-b_1 = delt*b_mean + (1-delt)*b_0 + rnorm(500, 0, 1.5)
+a_1 = delt*a_mean + (1-delt)*a_0 + rnorm(500, 0, 5)
+b_1 = delt*b_mean + (1-delt)*b_0 + rnorm(500, 0, 5)
 
-l_df = data.frame(Dorm = rep(c('B','A'), each = 500),
+l_df = data.frame(Sex = rep(c('M','F'), each = 500),
 				Initial = c(b_0,a_0),
 				Final = c(b_1,a_1),
 				Gain = c(b_1,a_1) - c(b_0,a_0))
@@ -32,7 +32,7 @@ l_df_long = (l_df
 head(l_df_long)
 ```
 
-## Lord's Formulation
+## The Question
 
 * A university has two dormitories with two different cafeteria menus. We want
 to know:
@@ -44,18 +44,21 @@ to know:
 school year:
 
 ```{r Scatter, include = TRUE}
-ggplot(l_df, aes(Initial, Final)) +
-	geom_point(aes(colour = Dorm), alpha = 0.3) +
-	stat_ellipse(aes(colour = Dorm)) +
-	# geom_smooth(aes(colour = Dorm), method = 'lm',
+plt = ggplot(l_df, aes(Initial, Final)) +
+	geom_point(aes(colour = Sex), alpha = 0.3) +
+	stat_ellipse(aes(colour = Sex)) +
+	# geom_smooth(aes(colour = Sex), method = 'lm',
 	# 			se = FALSE) +
 	# geom_smooth(method = 'lm', se = FALSE, colour = 'black') +
 	geom_abline(intercept = 0, slope = 1, linetype = 2) +
 	scale_colour_manual(values = cols)
-
+plt
+# pdf('img/main_plt.pdf', width = 4.5, height = 4)
+# plt
+# dev.off()
 ```
 
-* Blue points/ellipse represent students in Dorm B, gold represent Dorm A.
+* Blue points/ellipse represent students in Sex B, gold represent Sex A.
 * The dashed line is the diagonal: slope of 1 and intercept of 0.
 
 Two statisticians analyze these data. 
@@ -64,9 +67,9 @@ Two statisticians analyze these data.
 
 * The first compares the mean and variance of the initial vs. final weights in 
 each of the two dorms
-	* In Dorm A, the initial weights have the same mean and variance as the 
+	* In Sex A, the initial weights have the same mean and variance as the 
 	final weights
-	* Similarly in Dorm B, the initial and final weights have the same 
+	* Similarly in Sex B, the initial and final weights have the same 
 	distribution
 	* This statistician concludes that, while any individual student's weight 
 	might change substantially over the course of the year, the gains and losses
@@ -75,35 +78,46 @@ each of the two dorms
 It was 1967, so Lord used ANOVAs:
 
 ```{r ANOVA, echo = TRUE, include = TRUE}
-l_a_anov = aov(Weight ~ Timepoint, filter(l_df_long, Dorm == 'A'))
-l_b_anov = aov(Weight ~ Timepoint, filter(l_df_long, Dorm == 'B'))
+l_a_anov = aov(Weight ~ Timepoint, filter(l_df_long, Sex == 'F'))
+l_b_anov = aov(Weight ~ Timepoint, filter(l_df_long, Sex == 'M'))
 Anova(l_a_anov)
 Anova(l_b_anov)
 ```
 
 ```{r ANOVPlt, include = TRUE}
-ggplot(l_df_long, aes(Weight)) +
+l_anov = ggplot(l_df_long, aes(Weight)) +
 	geom_histogram() +
-	facet_grid(Timepoint ~ Dorm)
+	facet_grid(Timepoint ~ Sex)
+l_anov
+# pdf('img/l_anov.pdf', width = 4, height = 4)
+# l_anov
+# dev.off()
 ```
 
 But we can do an equivalent thing with a linear model:
 
 ```{r LM1, echo = TRUE, include = TRUE}
-l_mod1 = lm(Gain ~ Dorm, data = l_df)
+l_mod1 = lm(Gain ~ Sex, data = l_df)
 summary(l_mod1)
-l_em_df = data.frame(emmeans(l_mod1, 'Dorm'))
+l_em_df = data.frame(emmeans(l_mod1, 'Sex'))
 ```
 
 ```{r Boxplot, include = TRUE}
-ggplot(l_df, aes(Dorm, Gain)) +
-	geom_jitter(aes(colour = Dorm),
+l_box = ggplot(l_df, aes(Sex, Gain)) +
+	geom_jitter(aes(colour = Sex),
 				alpha = 0.3, 
 				width = 0.3) +
 	geom_boxplot(fill = NA) +
 	geom_point(data = l_em_df, aes(y = emmean),
 			   size = 3, alpha = 0.5) +
+	geom_linerange(data = l_em_df, inherit.aes = FALSE,
+				   aes(x = Sex, ymin = lower.CL, ymax = upper.CL),
+				   size = 3, alpha = 0.5) +
 	scale_colour_manual(values = cols)
+l_box
+# pdf('img/l_box.pdf', width = 4.5, height = 4)
+# l_box
+# dev.off()
 ```
 
 ### ANCOVA
@@ -115,54 +129,58 @@ students
 	an ANCOVA:
 
 ```{r ANCOVA, echo = TRUE, include = TRUE}
-l_ancov = aov(Final ~ Dorm + Initial, data = l_df)
+l_ancov = aov(Final ~ Sex + Initial, data = l_df)
 Anova(l_ancov)
 ```
 
 Again, we can do an equivalent test with a linear model
 
 ```{r LM2, include = TRUE, echo=TRUE}
-l_mod2 = lm(Final ~ Dorm + Initial, data = l_df)
+l_mod2 = lm(Final ~ Sex + Initial, data = l_df)
 summary(l_mod2)
 
-summary(lm(Gain ~ Dorm + Initial, data = l_df))
+summary(lm(Gain ~ Sex + Initial, data = l_df))
 ```
 
 And indeed, it is clear from the graph that the two regression lines will have
 very different intercepts:
 
 ```{r LordPlt, include = TRUE}
-ggplot(l_df, aes(Initial, Final)) +
-	geom_point(aes(colour = Dorm), alpha = 0.3) +
-	stat_ellipse(aes(colour = Dorm)) +
-	geom_smooth(aes(colour = Dorm), method = 'lm',
+l_reg = ggplot(l_df, aes(Initial, Final)) +
+	geom_point(aes(colour = Sex), alpha = 0.3) +
+	stat_ellipse(aes(colour = Sex)) +
+	geom_smooth(aes(colour = Sex), method = 'lm',
 				se = FALSE) +
 	geom_abline(intercept = 0, slope = 1, linetype = 2) +
 	scale_colour_manual(values = cols)
+l_reg
+# pdf('img/l_reg', width = 4.5, height = 4)
+# l_reg
+# dev.off()
 ```
 
-In other words: Students in Dorm B are gaining more weight than students in 
-Dorm B because _for any given initial weight_, the average final weight in Dorm
-B is higher than Dorm A.
+In other words: Students in Sex B are gaining more weight than students in 
+Sex B because _for any given initial weight_, the average final weight in Sex
+B is higher than Sex A.
 
 So, what is going on here?
 
 ## A Digression: Mediation
 
-Let's construct a different data set. In this data set students in Dorm B will
-gain more weight than students in Dorm B, and this gain will be _mediated_ by
+Let's construct a different data set. In this data set students in Sex B will
+gain more weight than students in Sex B, and this gain will be _mediated_ by
 initial weight. I.e., the more you weight initially, the more you gain.
 
 ```{r Mediation, include=TRUE, echo=TRUE}
 # Start with 1000 students
-m_a_0 = rnorm(500, 150, 4)
-m_b_0 = rnorm(500, 160, 4)
+m_a_0 = rnorm(500, 150, 5)
+m_b_0 = rnorm(500, 160, 5)
 
 # Final weight (and therefore weight gain) solely a function of initial weight
-m_a_f = (1+delt)*m_a_0 + rnorm(500, 0, 1.5)
-m_b_f = (1+delt)*m_b_0 + rnorm(500, 0, 1.5)
+m_a_f = (1+delt)*m_a_0 + rnorm(500, 0, 1)
+m_b_f = (1+delt)*m_b_0 + rnorm(500, 0, 1)
 
-m_df = data.frame(Dorm = rep(c('A','B'), each = 500),
+m_df = data.frame(Sex = rep(c('F','M'), each = 500),
 				Initial = c(m_a_0, m_b_0),
 				Final = c(m_a_f, m_b_f),
 				Gain = c(m_a_f - m_a_0, m_b_f - m_b_0))
@@ -172,29 +190,29 @@ m_df_long = (m_df
 		   %>% gather(Timepoint, Weight, Initial, Final))
 
 ggplot(m_df, aes(Initial, Final)) +
-	geom_point(aes(colour = Dorm), alpha = 0.3) +
-	stat_ellipse(aes(colour = Dorm)) +
-	# geom_smooth(aes(colour = Dorm), method = 'lm',
+	geom_point(aes(colour = Sex), alpha = 0.3) +
+	stat_ellipse(aes(colour = Sex)) +
+	# geom_smooth(aes(colour = Sex), method = 'lm',
 	# 			se = FALSE) +
 	geom_abline(intercept = 0, slope = 1, linetype = 2) +
 	scale_colour_manual(values = cols)
 ```
 
 In this case, both groups of students are gaining weight, but that gain is
-only related to the initial weight. There is no direct effect of Dorm.
+only related to the initial weight. There is no direct effect of Sex.
 
 ### ANOVA
 
 Let's do what Lord's first hypothetical statistician did, and run an ANOVA:
 
 ```{r ANOVAmed, include=TRUE, echo=TRUE}
-m_a_anov = aov(Weight ~ Timepoint, filter(m_df_long, Dorm == 'A'))
-m_b_anov = aov(Weight ~ Timepoint, filter(m_df_long, Dorm == 'B'))
+m_a_anov = aov(Weight ~ Timepoint, filter(m_df_long, Sex == 'F'))
+m_b_anov = aov(Weight ~ Timepoint, filter(m_df_long, Sex == 'M'))
 Anova(m_a_anov)
 Anova(m_b_anov)
 ```
 
-There is a clear effect of Dorm, even though we did not include one when we 
+There is a clear effect of Sex, even though we did not include one when we 
 constructed the data set.
 
 Looking at the distributions, it's clear their location has moved:
@@ -202,20 +220,20 @@ Looking at the distributions, it's clear their location has moved:
 ```{r ANOVMedPlt, include = TRUE}
 ggplot(m_df_long, aes(Weight)) +
 	geom_histogram() +
-	facet_grid(Timepoint ~ Dorm)
+	facet_grid(Timepoint ~ Sex)
 ```
 
 And here is the equivalent linear model:
 
 ```{r LM1med, echo = TRUE, include = TRUE}
-m_mod1 = lm(Gain ~ Dorm, data = m_df)
+m_mod1 = lm(Gain ~ Sex, data = m_df)
 summary(m_mod1)
-m_em_df = data.frame(emmeans(m_mod1, 'Dorm'))
+m_em_df = data.frame(emmeans(m_mod1, 'Sex'))
 ```
 
 ```{r Boxplotmed, include = TRUE}
-ggplot(m_df, aes(Dorm, Gain)) +
-	geom_jitter(aes(colour = Dorm),
+ggplot(m_df, aes(Sex, Gain)) +
+	geom_jitter(aes(colour = Sex),
 				alpha = 0.3, 
 				width = 0.3) +
 	geom_boxplot(fill = NA) +
@@ -224,7 +242,7 @@ ggplot(m_df, aes(Dorm, Gain)) +
 	scale_colour_manual(values = cols)
 ```
 
-When we don't control for initial weight, we see a clear effect of Dorm.
+When we don't control for initial weight, we see a clear effect of Sex.
 
 ### ANCOVA
 
@@ -232,27 +250,27 @@ Now let's follow Lord's second statistician's method. Again. the slopes in the
 two groups are similar, so we are justified in comparing their intercepts.
 
 ```{r ANCOVAmed, echo = TRUE, include = TRUE}
-m_ancov = aov(Gain ~ Dorm + Initial, data = m_df)
+m_ancov = aov(Gain ~ Sex + Initial, data = m_df)
 Anova(m_ancov)
 ```
 
-Effect of Dorm is no longer significant!
+Effect of Sex is no longer significant!
 
 Linear model framework:
 
 ```{r LM2med, include = TRUE, echo=TRUE}
-m_mod2 = lm(Gain ~ Dorm + Initial, data = m_df)
+m_mod2 = lm(Gain ~ Sex + Initial, data = m_df)
 summary(m_mod2)
 ```
 
-The intercept and effect of Dorm have both disappeared. Indeed, the intercepts
+The intercept and effect of Sex have both disappeared. Indeed, the intercepts
 of the two regression lines are the same.
 
 ```{r LordPltmed, include = TRUE}
 ggplot(m_df, aes(Initial, Final)) +
-	geom_point(aes(colour = Dorm), alpha = 0.3) +
-	stat_ellipse(aes(colour = Dorm)) +
-	geom_smooth(aes(colour = Dorm), method = 'lm',
+	geom_point(aes(colour = Sex), alpha = 0.3) +
+	stat_ellipse(aes(colour = Sex), alpha = 0.5) +
+	geom_smooth(aes(colour = Sex), method = 'lm',
 				se = FALSE) +
 	geom_abline(intercept = 0, slope = 1, linetype = 2) +
 	scale_colour_manual(values = cols)
@@ -262,8 +280,38 @@ So, what happened here?  Who is correct?
 
 ### Everyone is right; context is everything
 
-In this toy example, it is clear that Dorm is a red herring, but that is less 
-obvious in real life examples:
+![](./img/arrow_diag.svg)
+
+Statistician 1 is testing the **total effect** of sex on weight gain:
+
+$$
+TE = E(G|S = 1) - E(G|S = 0)
+$$
+
+or
+
+$$
+TE = (b + ac) - a 
+$$
+$$
+TE = b - a(1-c)
+$$
+
+
+Statistician 2 is testing the **direct effect** of sex on weight gain:
+
+$$
+DE = \sum_w[E(G|S = 1, W_I = w) - E(G|S = 0, W_I = w)]P(W_I = w|S = 0)
+$$
+
+or
+
+$$
+DE = b
+$$
+
+In this toy example we know that $b = 0$, and it seems clear that Sex is a
+red herring. But that is less obvious in real life examples:
 
 * Poverty, toxins, cancer
 	* what can you measure?
@@ -276,41 +324,38 @@ It's all real.
 
 ## Connect Mediation back to Lord
 
-Lord's Paradox is really a case of anti-mediation.
+Lord's dataset can be thought of in the same way:
 
-In both cases, Dorm is a positive function of $W_I$ (or vice versa)
+![](./img/arrow_diag.svg)
 
-$$
-D \sim \beta_{30} + \beta_{31} * W_I
-$$
+In this case, $b$ is not zero, but I chose values for $b$, $a$, and $c$ such 
+that $b = a(1 - c)$ and therefore $TE = 0$. 
 
-```{r, include = TRUE}
+
+
+You can see this more clearly if I plot Gain vs. $W_I$, instead of $W_F$ vs. 
+$W_I$ as Lord did:
+
+```{r}
 df_all = (rbind((l_df
 				%>% mutate(DataSet = 'Lord')),
 				(m_df
 				 %>% mutate(DataSet = 'Mediation')))
 		  %>% mutate(DataSet = factor(DataSet, levels = c('Mediation','Lord'))))
 
-d_i = ggplot(df_all, aes(Dorm, Initial)) +
-	geom_boxplot(aes(fill = Dorm)) +
+s_i = ggplot(df_all, aes(Sex, Initial)) +
+	geom_boxplot(aes(fill = Sex)) +
 	scale_fill_manual(values = cols) +
 	facet_wrap(~DataSet)
-d_i
+s_i
 ```
-
-In both cases, I constructed gain purely as a function of $W_I$. 
-The only difference was the sign.
-
-$$
-G \sim \beta_{20} + \beta_{21} * W_I
-$$
 
 ```{r, include = TRUE}
 g_i = ggplot(df_all, aes(Initial, Gain)) +
-	geom_point(aes(colour = Dorm), alpha = 0.3) +
-	stat_ellipse(aes(colour = Dorm)) +
-	# geom_smooth(aes(colour = Dorm), method = 'lm',
-	# 			se = FALSE) +
+	geom_point(aes(colour = Sex), alpha = 0.3) +
+	stat_ellipse(aes(colour = Sex)) +
+	geom_smooth(aes(colour = Sex), method = 'lm',
+				se = FALSE) +
 	# geom_smooth(method = 'lm', se = FALSE, colour = 'black') +
 	scale_colour_manual(values = cols) +
 	facet_wrap(~DataSet)
@@ -320,17 +365,19 @@ g_i
 Which is what leads us to our different conclusions.
 
 $$
-G \sim \beta_{10} + \beta_{11} * D
+G \sim \beta_{10} + \beta_{11} * S
 $$
 
 ```{r, include = TRUE}
-d_g = ggplot(df_all, aes(Dorm, Gain)) +
-	geom_boxplot(aes(fill = Dorm)) +
+s_g = ggplot(df_all, aes(Sex, Gain)) +
+	geom_boxplot(aes(fill = Sex)) +
 	scale_fill_manual(values = cols) +
 	facet_wrap(~DataSet)
-d_g
+s_g
 ```
 
+
+The first statistician was testing the _total effect_ of sex 
 
 There is no need for the mediating variable to be the baseline value of the 
 response variable. E.g.
