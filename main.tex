@@ -38,10 +38,32 @@
 \usepackage{graphicx}
 \usepackage{xfrac}
 \usepackage{xcolor}
+\usepackage{listings}
 %\usepackage{kbordermatrix}
 
 \definecolor{alt}{rgb}{0.44,0.00,0.16} % SET THIS TO A WARM RED WITH RGB VALUES
 %\setbeamercolor{alerted text}{fg=alt,bg=}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=R,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
 \setbeamercolor{alerted text}{fg=purple,bg=}
 
 \AtBeginSection{\frame{\tableofcontents[currentsection]}}
@@ -113,8 +135,24 @@ following June are recorded.'' (Lord 1967, p. 304)
 \begin{frame}{}
 	Return to sex, initial weight, and weight gain.
 	\includegraphics{arrow_diag.pdf}
+
 	Let's construct a data set where $b = 0$, so the effect of sex on gain is
 	100\% mediated by initial weight.
 \end{frame}
+
+\begin{frame}{}
+	\begin{lstlistings}
+		wi\_f = rnorm(500, 150, 5)
+		wi\_m = rnorm(500, 160, 5)
+
+		wf\_f = (1.2 * wi\_f) + rnorm(500, 0, 1)
+		wf\_m = (1.2 * wi\_m) + rnorm(500, 0, 1)
+
+		df = data.frame(Sex = rep(c('F', 'M'), each = 500),
+						Initial = c(wi\_f, wi\_m),
+						Final = c(wf\_f, wf\_m),
+						Gain = c(wf\_f - wi\_f, wf\_m - wi\_m))
+	\end{lstlistings}
+\end{frame} 
 
 \end{document}
