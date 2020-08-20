@@ -37,7 +37,7 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{xfrac}
-\usepackage{xcolor}
+%\usepackage{xcolor}
 \usepackage{listings}
 %\usepackage{kbordermatrix}
 
@@ -144,18 +144,18 @@ following June are recorded.'' (Lord 1967, p. 304)
 	100\% mediated by initial weight.
 \end{frame}
 
-\begin{frame}{}
+\begin{frame}
 	\begin{lstlisting}
-		wi\_f = rnorm(500, 150, 5)
-		wi\_m = rnorm(500, 160, 5)
+		wif = rnorm(500, 150, 5)
+		wim = rnorm(500, 160, 5)
 
-		wf\_f = (1.2 * wi\_f) + rnorm(500, 0, 1)
-		wf\_m = (1.2 * wi\_m) + rnorm(500, 0, 1)
+		wff = (1.2 * wif) + rnorm(500, 0, 1)
+		wfm = (1.2 * wim) + rnorm(500, 0, 1)
 
 		df = data.frame(Sex = rep(c('F', 'M'), each = 500),
-						Initial = c(wi\_f, wi\_m),
-						Final = c(wf\_f, wf\_m),
-						Gain = c(wf\_f - wi\_f, wf\_m - wi\_m))
+						Initial = c(wif, wim),
+						Final = c(wff, wfm),
+						Gain = c(wff - wif, wfm - wim))
 	\end{lstlisting}
 \end{frame} 
 
