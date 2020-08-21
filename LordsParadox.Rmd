@@ -1,5 +1,8 @@
-Lord's Paradox
-==============
+---
+title: Lord's Paradox
+output: ioslides_presentation
+---
+
 
 ```{r Setup, echo=FALSE, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, include = FALSE, message = FALSE, 
@@ -32,13 +35,14 @@ l_df_long = (l_df
 head(l_df_long)
 ```
 
-## The Question
+# The Question
 
 * A university has two dormitories with two different cafeteria menus. We want
 to know:
 	* How do students' weights change over the course of their first year at 
 	university?
 	* What is the effect of the different menus on student weight change?
+---
 	
 * Students in the two dormitories are weighed at the beginning and end of the 
 school year:
@@ -63,7 +67,7 @@ plt
 
 Two statisticians analyze these data. 
 
-### Anova
+# Anova
 
 * The first compares the mean and variance of the initial vs. final weights in 
 each of the two dorms
@@ -74,7 +78,7 @@ each of the two dorms
 	* This statistician concludes that, while any individual student's weight 
 	might change substantially over the course of the year, the gains and losses
 	cancel each other and any overall effect is negligible.
-
+---
 It was 1967, so Lord used ANOVAs:
 
 ```{r ANOVA, echo = TRUE, include = TRUE}
@@ -93,7 +97,7 @@ l_anov
 # l_anov
 # dev.off()
 ```
-
+---
 But we can do an equivalent thing with a linear model:
 
 ```{r LM1, echo = TRUE, include = TRUE}
@@ -120,7 +124,7 @@ l_box
 # dev.off()
 ```
 
-### ANCOVA
+# ANCOVA
 
 * The second statistician decides to control for the initial weight of the 
 students
@@ -132,7 +136,7 @@ students
 l_ancov = aov(Final ~ Sex + Initial, data = l_df)
 Anova(l_ancov)
 ```
-
+---
 Again, we can do an equivalent test with a linear model
 
 ```{r LM2, include = TRUE, echo=TRUE}
@@ -141,7 +145,7 @@ summary(l_mod2)
 
 summary(lm(Gain ~ Sex + Initial, data = l_df))
 ```
-
+---
 And indeed, it is clear from the graph that the two regression lines will have
 very different intercepts:
 
@@ -163,9 +167,12 @@ In other words: Students in Sex B are gaining more weight than students in
 Sex B because _for any given initial weight_, the average final weight in Sex
 B is higher than Sex A.
 
+---
 So, what is going on here?
 
-## A Digression: Mediation
+# A Digression: Mediation
+
+
 
 Let's construct a different data set. In this data set students in Sex B will
 gain more weight than students in Sex B, and this gain will be _mediated_ by
@@ -293,6 +300,7 @@ or
 $$
 TE = (b + ac) - a 
 $$
+
 $$
 TE = b - a(1-c)
 $$
